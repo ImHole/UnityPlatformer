@@ -3,127 +3,36 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
+using System.Linq;
+using System;
 
 public class PlayerController : MonoBehaviour {
 
     public CharacterController Controller;
-    public TimeSince timeSinceDash = 0f;
-
-    //movement
+    public List<MovementComponent> MovementComponents;
 
     public Vector3 Velocity;
 
-    public float gravity = 100f;
-    public float playerSpd = 4f;
-    private float playerInputTarget;
+    void Start(){
+        MovementComponents = new List<MovementComponent>();
+        MovementComponents = gameObject.GetComponents<MovementComponent>().ToList();
+    }
 
+    void Update(){
 
-    //states
-    public enum PlayerState {
+        MovementComponents = MovementComponents.OrderBy(x => x.Priority).ToList();
 
-        idle = 0,
-        dash = 1,
-        attack = 2
+        foreach(MovementComponent mc in MovementComponents){
+            mc.Simulate(this);
+        }
+
+        Controller.Move(Velocity * Time.deltaTime);
 
     }
 
-    public PlayerState state;
+    public void Jump(){
 
-
-
-    void Idle() {
-        
-        playerInputTarget = Input.GetAxis("Horizontal");
-
-        //jumping
-
-        if( Input.GetKeyDown(KeyCode.Space) && Controller.isGrounded ) {
-
-            Velocity.y = 5f;
-        }
-
-        //dash transition
-
-        if( Input.GetKeyDown(KeyCode.LeftShift) ) {
-
-            state = PlayerState.dash;
-            timeSinceDash = 0f;
-            Velocity = Vector3.zero;
-        }
-
-    }
-
-    void Dash() {
-
-        if( timeSinceDash < 1f ) {
-
-            Velocity.x = 6f * Mathf.Sign(Input.GetAxis("Horizontal"));
-        }
-        else {
-
-            state = PlayerState.idle;
-        }
-    }
-
-    void Attack() {
-        
-    }
-
-    void HandleInput() {
-
-        switch( state ){
-
-            case PlayerState.idle: Idle();
-
-            break;
-
-            case PlayerState.dash: Dash();
-
-            break;
-
-            case PlayerState.attack: Attack();
-
-            break;
-        }
-
-    }
-
-    void HandleMovement() {
-
-        if(Controller.isGrounded) {
-
-            Velocity.y = -10f;
-        }
-        else{
-
-            if(state != PlayerState.dash){
-
-                Velocity.y += gravity*Time.deltaTime;
-            }
-        }
-
-        Velocity.x = playerInputTarget * playerSpd;
-
-        HandleInput();
-
-        Controller.Move(Velocity*Time.deltaTime);
-    }
-
-
-
-    void Start() {
-
-        if(Controller == null) {
-
-            Controller = GetComponent<CharacterController>();
-        }
-
-        state = PlayerState.idle;
-    }
-
-    void Update() {
-        
-        HandleMovement();
+        Velocity.y += 15;
     }
 }
 
